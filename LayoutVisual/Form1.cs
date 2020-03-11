@@ -20,18 +20,25 @@ namespace LayoutVisual
             this.y = y;
         }
     }
+    enum PointDirect
+    { 
+        Vertical = 1,
+        Horizontal = 2
+    }
     struct LinkPoint
     {
         public int device1Index;
         public int device2Index;
-        public Size p1;
-        public Size p2;
-        public LinkPoint(int device1Index, int device2Index, Size p1, Size p2)
+        //public PointDirect device1PD;
+        //public PointDirect device2PD;
+        public List<Size> points;//路径的所有点
+        public LinkPoint(int device1Index, int device2Index, List<Size> points)
         {
             this.device1Index = device1Index;
+            //this.device1PD = device1PD;
             this.device2Index = device2Index;
-            this.p1 = p1;
-            this.p2 = p2;
+            //this.device2PD = device2PD;
+            this.points = points;
         }
     }
     public partial class Form1 : Form
@@ -56,6 +63,8 @@ namespace LayoutVisual
             List<Size> devicePosList = new List<Size>();//设备坐标数组
             List<LinkPoint> linkPointList = new List<LinkPoint>();//设备点连线数组
             string line = "";
+            int screenLength, screenWidth;
+            screenLength = screenWidth = 800;
             
             //读取车间尺寸
             StreamReader file1 = new StreamReader("../../../../InputPara.txt");
@@ -117,11 +126,17 @@ namespace LayoutVisual
                 string[] axisStr = line.Split(' ');
                 int device1Index = Convert.ToInt32(axisStr[0]);
                 int device2Index = Convert.ToInt32(axisStr[1]);
-                string[] p1Str = axisStr[2].Split(',');
-                string[] p2Str = axisStr[3].Split(',');
-                Size p1 = new Size(Math.Round(Convert.ToDouble(p1Str[0]), roundSum), Math.Round(Convert.ToDouble(p1Str[1]), roundSum));
-                Size p2 = new Size(Math.Round(Convert.ToDouble(p2Str[0]), roundSum), Math.Round(Convert.ToDouble(p2Str[1]), roundSum));
-                linkPointList.Add(new LinkPoint(device1Index, device2Index, p1, p2));
+                string[] pointsStr = axisStr[2].Split('|');
+                //PointDirect PD1 = (PointDirect)Convert.ToInt32(p1Str[0]);
+                //PointDirect PD2 = (PointDirect)Convert.ToInt32(p2Str[0]);
+                List<Size> points = new List<Size>();
+                for (int i = 0; i < pointsStr.Length; i++)
+                {
+                    string[] pointStr = pointsStr[i].Split(',');
+                    points.Add(new LayoutVisual.Size(Math.Round(Convert.ToDouble(pointStr[0]), roundSum), 
+                        Math.Round(Convert.ToDouble(pointStr[1]), roundSum)));
+                }
+                linkPointList.Add(new LinkPoint(device1Index, device2Index, points));
             }
             #endregion
 
@@ -162,7 +177,9 @@ namespace LayoutVisual
             
             int enlargeNum = 30; //放大倍数
 
-            //绘制设备
+            Pen outLinePen1 = new Pen(Color.Black, 1f);
+            Pen outLinePen2 = new Pen(Color.Blue, 1f);
+            //绘制设备&设备边缘的线
             for (int i = 0; i < devicePosList.Count; i++)
             {
                 int rectAxisX = GetRectAxis(devicePosList[i].x - 0.5 * deviceSizeList[i].x, enlargeNum);
@@ -175,6 +192,24 @@ namespace LayoutVisual
                 int deviceCenterY = GetRectAxis(devicePosList[i].y, enlargeNum) + offset_Y - 3;
                 GPS.FillEllipse(Brushes.Red, deviceCenterX, deviceCenterY, 6, 6);//设备中心点
                 GPS.DrawRectangle(MyPen, Rect);//设备外框
+                #region 绘制设备外边缘的线
+                //double offsetOut = 0;
+                //int lineLeftX = GetRectAxis(devicePosList[i].x - 0.5 * deviceSizeList[i].x - offsetOut, enlargeNum);
+                //int lineUpY = GetRectAxis(devicePosList[i].y - 0.5 * deviceSizeList[i].y - offsetOut, enlargeNum);
+                //int lineRightX = GetRectAxis(devicePosList[i].x + 0.5 * deviceSizeList[i].x + offsetOut, enlargeNum);
+                //int lineDownY = GetRectAxis(devicePosList[i].y + 0.5 * deviceSizeList[i].y + offsetOut, enlargeNum);
+                //GPS.DrawLine(outLinePen1, 0, lineUpY + offset_Y, screenLength, lineUpY + offset_Y);
+                //GPS.DrawLine(outLinePen1, 0, lineDownY + offset_Y, screenLength, lineDownY + offset_Y);
+                //GPS.DrawLine(outLinePen1, lineLeftX + offset_X, 0, lineLeftX + offset_X, screenWidth);
+                //GPS.DrawLine(outLinePen1, lineRightX + offset_X, 0, lineRightX + offset_X, screenWidth);
+
+
+                #endregion 
+
+
+
+
+
                 Font myFont = new Font("宋体", 12, FontStyle.Bold);
                 GPS.DrawString((i + 1).ToString(), myFont, Brushes.Black, deviceCenterX - 3, deviceCenterY + 3);//设备编号
             }
@@ -185,10 +220,9 @@ namespace LayoutVisual
             int enterPointSize = 10;
             GPS.FillEllipse(Brushes.Red, enterRectAxisX + offset_X - (int)(0.5 * enterPointSize), enterRectAxisY + offset_Y - (int)(0.5 * enterPointSize), enterPointSize, enterPointSize);
 
-            //绘制连线（修改为连接出入口）
+            //绘制出入口连线
             Point a, b;
             int startX, startY, endX, endY;
-            int device1OffsetX, device1OffsetY, device2OffsetX, device2OffsetY;
 
             Pen linePen = new Pen(GetRandomColor(), 2);
             for (int i = 0; i < linkPointList.Count; i++)
@@ -197,28 +231,57 @@ namespace LayoutVisual
                 {
                     linePen = new Pen(GetRandomColor(), 2);
                 }
-                linePen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-                System.Drawing.Drawing2D.AdjustableArrowCap _LineCap = new System.Drawing.Drawing2D.AdjustableArrowCap(9, 9, false);   //设置一个线头
-                linePen.CustomEndCap = (System.Drawing.Drawing2D.CustomLineCap)_LineCap;
-                startX = GetRectAxis(linkPointList[i].p1.x, enlargeNum);
-                startY = GetRectAxis(linkPointList[i].p1.y, enlargeNum);
-                endX = GetRectAxis(linkPointList[i].p2.x, enlargeNum);
-                endY = GetRectAxis(linkPointList[i].p2.y, enlargeNum);
-                if (linkPointList[i].device1Index == -1)
+                for (int j = linkPointList[i].points.Count - 1; j > 0; j--)
                 {
-                    device1OffsetX = 0;
-                    device1OffsetY = 0;
+                    startX = GetRectAxis(linkPointList[i].points[j].x, enlargeNum);
+                    startY = GetRectAxis(linkPointList[i].points[j].y, enlargeNum);
+                    endX = GetRectAxis(linkPointList[i].points[j - 1].x, enlargeNum);
+                    endY = GetRectAxis(linkPointList[i].points[j - 1].y, enlargeNum);
+                    a = new Point(startX + offset_X, startY + offset_Y);
+                    b = new Point(endX + offset_X, endY + offset_Y);
+                    if (j == 1)
+                    {
+                        System.Drawing.Drawing2D.AdjustableArrowCap _LineCap = new System.Drawing.Drawing2D.AdjustableArrowCap(9, 9, false);   //设置一个线头
+                        linePen.CustomEndCap = (System.Drawing.Drawing2D.CustomLineCap)_LineCap;
+                    }
+                    else
+                    {
+                        linePen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                    }
+                    GPS.DrawLine(linePen, a, b);
+
                 }
-                else
-                {
-                    device1OffsetX = GetRectAxis(devicePosList[linkPointList[i].device1Index].x, enlargeNum);
-                    device1OffsetY = GetRectAxis(devicePosList[linkPointList[i].device1Index].y, enlargeNum);
-                }
-                device2OffsetX = GetRectAxis(devicePosList[linkPointList[i].device2Index].x, enlargeNum);
-                device2OffsetY = GetRectAxis(devicePosList[linkPointList[i].device2Index].y, enlargeNum);
-                a = new Point(startX + offset_X + device1OffsetX, startY + offset_Y + device1OffsetY);
-                b = new Point(endX + offset_X + device2OffsetX, endY + offset_Y + device2OffsetY);
-                GPS.DrawLine(linePen, a, b);
+
+                #region 绘制出入口点的水平垂直线
+                //if (linkPointList[i].device1PD == PointDirect.Horizontal)
+                //{
+                //    a = new Point(0, startY + offset_Y + device1OffsetY);
+                //    b = new Point(screenLength, startY + offset_Y + device1OffsetY);
+
+                //    GPS.DrawLine(outLinePen2, a, b);
+                //}
+                //else
+                //{
+                //    a = new Point(startX + offset_X + device1OffsetX, 0);
+                //    b = new Point(startX + offset_X + device1OffsetX, screenWidth);
+                //    GPS.DrawLine(outLinePen2, a, b);
+                //}
+
+                //if (linkPointList[i].device2PD == PointDirect.Horizontal)
+                //{
+                //    a = new Point(0, endY + offset_Y + device2OffsetY);
+                //    b = new Point(screenLength, endY + offset_Y + device2OffsetY);
+
+                //    GPS.DrawLine(outLinePen2, a, b);
+                //}
+                //else
+                //{
+                //    a = new Point(endX + offset_X + device2OffsetX, 0);
+                //    b = new Point(endX + offset_X + device2OffsetX, screenWidth);
+                //    GPS.DrawLine(outLinePen2, a, b);
+                //}
+                #endregion
+
             }
             //for (int i = 0; i < cargoDeviceList.Count; i++)
             //{
