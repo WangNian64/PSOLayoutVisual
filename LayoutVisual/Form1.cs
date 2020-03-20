@@ -80,17 +80,6 @@ namespace LayoutVisual
             double enterAxisX = Convert.ToDouble(enterStr[0]);
             double enterAxisY = Convert.ToDouble(enterStr[1]);
 
-            //读取设备尺寸
-            StreamReader file2 = new StreamReader("../../../../DeviceSize.txt");
-            line = file2.ReadLine();
-            string[] sizeStr = line.Split(' ');
-            foreach (string size in sizeStr)
-            {
-                string[] sizeArray = size.Split(',');
-                double sizeX = Convert.ToDouble(sizeArray[0]);
-                double sizeY = Convert.ToDouble(sizeArray[1]);
-                deviceSizeList.Add(new Size(sizeX, sizeY));
-            }
 
             //读取货物路线
             //line = file2.ReadLine();
@@ -119,6 +108,16 @@ namespace LayoutVisual
                 double axisX = Math.Round(Convert.ToDouble(axisStr[0]), roundSum);
                 double axisY = Math.Round(Convert.ToDouble(axisStr[1]), roundSum);
                 devicePosList.Add(new LayoutVisual.Size(axisX, axisY));
+            }
+            //读取设备尺寸
+            for (int i = 0; i < deviceNum; i++)
+            {
+
+                line = file3.ReadLine();
+                string[] sizeStr = line.Split(',');
+                double sizeX = Math.Round(Convert.ToDouble(sizeStr[0]), roundSum);
+                double sizeY = Math.Round(Convert.ToDouble(sizeStr[1]), roundSum);
+                deviceSizeList.Add(new LayoutVisual.Size(sizeX, sizeY));
             }
             //读取出入口的连线关系
             while ((line = file3.ReadLine()) != null)
@@ -310,7 +309,7 @@ namespace LayoutVisual
 
             //绘制外部轮廓
             int enlargeNum1 = enlargeNum;
-            Pen MyPen1 = new Pen(Color.Black, 2f);
+            Pen MyPen1 = new Pen(Color.Gray, 2f);
             int sizeWorkshop_x = shopLength * enlargeNum1;
             int sizeWorkshop_y = shopWidth * enlargeNum1;
             Rectangle Rect1 = new Rectangle(offset_X, offset_Y, sizeWorkshop_x, sizeWorkshop_y);
@@ -319,7 +318,6 @@ namespace LayoutVisual
             #endregion
 
             file1.Close();
-            file2.Close();
             file3.Close();
         }
 
