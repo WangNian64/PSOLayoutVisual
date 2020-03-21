@@ -79,23 +79,13 @@ namespace LayoutVisual
             string[] enterStr = line.Split(',');
             double enterAxisX = Convert.ToDouble(enterStr[0]);
             double enterAxisY = Convert.ToDouble(enterStr[1]);
+            //读取仓库出口位置
+            file1.ReadLine();
+            line = file1.ReadLine();
+            string[] exitStr = line.Split(',');
+            double exitAxisX = Convert.ToDouble(exitStr[0]);
+            double exitAxisY = Convert.ToDouble(exitStr[1]);
 
-
-            //读取货物路线
-            //line = file2.ReadLine();
-            //string[] cargoDeviceStr = line.Split(' ');
-            //for (int i = 0; i < cargoDeviceStr.Length; i++)
-            //{
-            //    cargoDeviceList.Add(new List<int>());
-            //}
-            //for (int i = 0; i < cargoDeviceStr.Length; i++)
-            //{
-            //    string[] deviceStr = cargoDeviceStr[i].Split('-');
-            //    for (int j = 0; j < deviceStr.Length; j++)
-            //    {
-            //        cargoDeviceList[i].Add(Convert.ToInt32(deviceStr[j]));
-            //    }
-            //}
 
             //读取设备坐标
             int deviceNum = 6;
@@ -205,19 +195,20 @@ namespace LayoutVisual
 
                 #endregion 
 
-
-
-
-
                 Font myFont = new Font("宋体", 12, FontStyle.Bold);
                 GPS.DrawString((i + 1).ToString(), myFont, Brushes.Black, deviceCenterX - 3, deviceCenterY + 3);//设备编号
             }
 
-            //绘制入口
+            //绘制入口&出口
             int enterRectAxisX = Convert.ToInt32(enterAxisX * enlargeNum);
             int enterRectAxisY = Convert.ToInt32(enterAxisY * enlargeNum);
             int enterPointSize = 10;
             GPS.FillEllipse(Brushes.Red, enterRectAxisX + offset_X - (int)(0.5 * enterPointSize), enterRectAxisY + offset_Y - (int)(0.5 * enterPointSize), enterPointSize, enterPointSize);
+
+            int exitRectAxisX = Convert.ToInt32(exitAxisX * enlargeNum);
+            int exitRectAxisY = Convert.ToInt32(exitAxisY * enlargeNum);
+            int exitPointSize = 10;
+            GPS.FillEllipse(Brushes.Blue, exitRectAxisX + offset_X - (int)(0.5 * exitPointSize), exitRectAxisY + offset_Y - (int)(0.5 * exitPointSize), exitPointSize, exitPointSize);
 
             //绘制出入口连线
             Point a, b;
@@ -226,10 +217,7 @@ namespace LayoutVisual
             Pen linePen = new Pen(GetRandomColor(), 2);
             for (int i = 0; i < linkPointList.Count; i++)
             {
-                if (i!=0 && linkPointList[i].device1Index == -1)
-                {
-                    linePen = new Pen(GetRandomColor(), 2);
-                }
+                linePen = new Pen(GetRandomColor(), 2);
                 for (int j = linkPointList[i].points.Count - 1; j > 0; j--)
                 {
                     startX = GetRectAxis(linkPointList[i].points[j].x, enlargeNum);
